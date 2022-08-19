@@ -3,11 +3,8 @@
 
 #include "FGHoloTest.h"
 
-#include "FGBuildableCopy.h"
 #include "FGPlayerController.h"
-#include "Engine/InheritableComponentHandler.h"
 #include "Equipment/FGBuildGunBuild.h"
-#include "GenericPlatform/GenericPlatformMath.h"
 
 AFGHoloTest::AFGHoloTest()
 {

@@ -3,11 +3,8 @@
 #pragma once
 
 #include <Actor.h>
-
 #include "CoreMinimal.h"
 #include "Buildables/FGBuildable.h"
-#include "Buildables/FGBuildableFactory.h"
-#include "Resources/FGBuildingDescriptor.h"
 #include "FGBuildableCB.generated.h"
 
 /**
@@ -20,7 +17,15 @@ class COPYBOX_API AFGBuildableCB : public AFGBuildable
 public:
 
 	AFGBuildableCB();
+
+	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
+	void AddBuildable(AActor* OverlappedActor);
 	
 	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
-	FString GetHologramName(AFGBuildable *build);
+	void SaveCopy(FString CopiesName) const;
+
+protected:
+	
+	TArray<TSubclassOf< UFGRecipe >> Copies;
+	TArray<FVector> DeltaPosition;
 };

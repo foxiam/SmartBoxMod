@@ -36,7 +36,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
 	void ScaleZ(float Value);
-
+	
 	virtual bool DoMultiStepPlacement(bool isInputFromARelease) override;
 
 	virtual bool IsValidHitResult(const FHitResult& hitResult) const override;
@@ -48,5 +48,6 @@ protected:
 	bool HoldMode = false;
 	ECBHBuildStep mBuildStep;
 
+	UPROPERTY()
 	const AFGCharacterPlayer* ConstructionInstigator;
 };

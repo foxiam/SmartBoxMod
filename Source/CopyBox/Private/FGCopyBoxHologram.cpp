@@ -3,6 +3,7 @@
 
 #include "FGCopyBoxHologram.h"
 #include "FGPlayerController.h"
+#include "SavedCopy.h"
 
 AFGCopyBoxHologram::AFGCopyBoxHologram()
 {
@@ -61,6 +62,8 @@ void AFGCopyBoxHologram::SetHologramLocationAndRotation(const FHitResult& hitRes
 {
 	if(!HoldMode) Super::SetHologramLocationAndRotation(hitResult);
 }
+
+
 
 
 
