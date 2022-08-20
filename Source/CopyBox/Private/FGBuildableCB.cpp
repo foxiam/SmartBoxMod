@@ -7,10 +7,7 @@
 #include "Hologram/FGHologram.h"
 
 
-AFGBuildableCB::AFGBuildableCB() : Super()
-{
-	this->mSkipBuildEffect = true;
-}
+AFGBuildableCB::AFGBuildableCB() : Super() {}
 
 void AFGBuildableCB::AddBuildable(AActor* OverlappedActor)
 {
@@ -34,5 +31,7 @@ void AFGBuildableCB::SaveCopy(FString CopiesName) const
 	ASavedCopy *Copy = GetWorld()->SpawnActor<ASavedCopy>(ASavedCopy::StaticClass(), FTransform());
 	Copy->Init(Copies, DeltaPosition, CopiesName);
 }
+
+
 
 

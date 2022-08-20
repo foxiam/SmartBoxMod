@@ -16,8 +16,11 @@ public:
 	ASavedCopy();
 
 	void Init(const TArray<TSubclassOf< UFGRecipe >>& _Copies, const TArray<FVector>& _DeltaPosition, FString& _CopiesName);
-	
+
+	UPROPERTY(BlueprintReadOnly)
 	TArray<TSubclassOf< UFGRecipe >> Copies;
+	UPROPERTY(BlueprintReadOnly)
 	TArray<FVector> DeltaPosition;
+	UPROPERTY(BlueprintReadOnly)
 	FString CopiesName;
 };
