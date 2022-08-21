@@ -7,9 +7,12 @@
 // Sets default values
 ASavedCopy::ASavedCopy() {}
 
-void ASavedCopy::Init(const TArray<TSubclassOf<UFGRecipe>>& _Copies, const TArray<FVector>& _DeltaPosition, FString& _CopiesName)
+void ASavedCopy::Init(
+	const TArray<TSubclassOf<UFGRecipe>>& _Copies,
+	const TArray<FTransform>& _RelativeTransforms,
+	FString& _CopiesName)
 {
 	Copies = _Copies;
-	DeltaPosition = _DeltaPosition;
+	RelativeTransforms = _RelativeTransforms;
 	CopiesName = _CopiesName;
 }

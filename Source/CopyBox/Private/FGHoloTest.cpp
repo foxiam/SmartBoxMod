@@ -12,30 +12,25 @@ void AFGHoloTest::BeginPlay()
 {
 	Super::BeginPlay();
 	ConstructionInstigator = Cast<AFGCharacterPlayer>(GetConstructionInstigator());
-	SectionCopyInteractWidget =CreateWidget<UFGInteractWidget>(
-		Cast<AFGPlayerController>(ConstructionInstigator->GetController()),
-			SelectionCopyWidget);
-	SectionCopyInteractWidget->mInteractObject = this;
-	SectionCopyInteractWidget->SetInputMode();
-	SectionCopyInteractWidget->AddToViewport(9999);
+	if(ConstructionInstigator)
+		ConstructionInit(ConstructionInstigator);
 }
+
+void AFGHoloTest::CheckValidFloor() {}
 
 void AFGHoloTest::ChildInit(
 	const TArray<TSubclassOf<UFGRecipe>>& ChildRecipe,
-	const TArray< FVector > &ChildDeltaPosition )
+	const TArray< FTransform > &ChildRelativeTransforms )
 {
-	SectionCopyInteractWidget->mCaptureInput = false;
-	SectionCopyInteractWidget->mUseKeyboard = false;
-	SectionCopyInteractWidget->mUseMouse=false;
-	SectionCopyInteractWidget->SetInputMode();
 	for(int i = 0; i < ChildRecipe.Num(); i++)
 	{
 		ChildHolograms.Add(SpawnChildHologramFromRecipe(
 			this,
 			ChildRecipe[i],
 			this,
-			ChildDeltaPosition[i])
+			ChildRelativeTransforms[i].GetLocation())
 		);
+		ChildHolograms[i]->SetActorRotation(ChildRelativeTransforms[i].GetRotation());
 		ChildHolograms[i]->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 	}
 }

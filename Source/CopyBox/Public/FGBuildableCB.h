@@ -27,5 +27,5 @@ public:
 protected:
 	
 	TArray<TSubclassOf< UFGRecipe >> Copies;
-	TArray<FVector> DeltaPosition;
+	TArray<FTransform> RelativeTransforms;
 };

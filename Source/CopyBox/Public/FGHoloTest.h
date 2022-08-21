@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract)
 class COPYBOX_API AFGHoloTest : public AFGBuildableHologram
 {
 	GENERATED_BODY()
@@ -18,10 +18,16 @@ public:
 	
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable)
-	void ChildInit(const TArray< TSubclassOf< UFGRecipe > > &ChildRecipe, const TArray< FVector > &ChildDeltaPosition);
+	virtual void CheckValidFloor() override;
 
-	UPROPERTY(BlueprintReadOnly)
+	UFUNCTION(BlueprintCallable)
+	void ChildInit(const TArray<TSubclassOf<UFGRecipe>>& ChildRecipe,
+	               const TArray<FTransform>& ChildRelativeTransforms);
+	
+	UFUNCTION(BlueprintImplementableEvent)
+	void ConstructionInit(AFGCharacterPlayer *ConstructionInitInstigator);
+
+	UPROPERTY()
 	AFGCharacterPlayer *ConstructionInstigator;
 
 private:

@@ -4,7 +4,7 @@
 
 #include "FGBuildableCopy.h"
 #include "SavedCopy.h"
-#include "Hologram/FGHologram.h"
+#include "GenericPlatform/GenericPlatformMath.h"
 
 
 AFGBuildableCB::AFGBuildableCB() : Super() {}
@@ -14,22 +14,21 @@ void AFGBuildableCB::AddBuildable(AActor* OverlappedActor)
 	if(const AFGBuildable *Buildable = Cast<AFGBuildable>(OverlappedActor))
 	{
 		Copies.Add(Buildable->GetBuiltWithRecipe());
-		DeltaPosition.Add(FVector::ZeroVector);
-		if(Buildable->GetBuiltWithRecipe()->GetDefaultObject())
-		{
-			UE_LOG(LogTemp, Error, TEXT("Recipe name: %s"), *Buildable->GetBuiltWithRecipe()->GetDefaultObject()->GetName());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Recipe name: NULL"));
-		}
+		FTransform BRTransform = Buildable->GetTransform().GetRelativeTransform(GetTransform());
+		FVector BuildableLocation = BRTransform.GetLocation();
+		FVector CS = GetActorScale3D();
+		BuildableLocation.X *= CS.X;
+		BuildableLocation.Y *= CS.Y;
+		BuildableLocation.Z *= CS.Z;
+		BRTransform = FTransform(BRTransform.GetRotation(), BuildableLocation);
+		RelativeTransforms.Add(BRTransform);
 	}
 }
 
 void AFGBuildableCB::SaveCopy(FString CopiesName) const
 {
 	ASavedCopy *Copy = GetWorld()->SpawnActor<ASavedCopy>(ASavedCopy::StaticClass(), FTransform());
-	Copy->Init(Copies, DeltaPosition, CopiesName);
+	Copy->Init(Copies, RelativeTransforms, CopiesName);
 }
 
 
