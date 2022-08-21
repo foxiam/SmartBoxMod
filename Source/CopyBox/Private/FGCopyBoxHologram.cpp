@@ -55,7 +55,7 @@ bool AFGCopyBoxHologram::DoMultiStepPlacement(bool isInputFromARelease)
 
 bool AFGCopyBoxHologram::IsValidHitResult(const FHitResult& hitResult) const
 {
-	const bool checkValidClass = Cast<AFGBuildableFoundation>(hitResult.GetActor());
+	const bool checkValidClass = Cast<AFGBuildableFoundation>(hitResult.GetActor()) != nullptr;
 	if(!HoldMode) return checkValidClass && Super::IsValidHitResult(hitResult);
 	return true;
 }
