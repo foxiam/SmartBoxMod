@@ -18,8 +18,6 @@ public:
 	
 	virtual void BeginPlay() override;
 
-	virtual void CheckValidFloor() override;
-
 	UFUNCTION(BlueprintCallable)
 	void ChildInit(const TArray<TSubclassOf<UFGRecipe>>& ChildRecipe,
 	               const TArray<FTransform>& ChildRelativeTransforms);
@@ -36,7 +34,4 @@ private:
 
 	UPROPERTY()
 	UFGInteractWidget *SectionCopyInteractWidget;
-	
-	UPROPERTY()
-	TArray< AFGHologram* > ChildHolograms;
 };

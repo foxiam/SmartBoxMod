@@ -16,22 +16,20 @@ void AFGHoloTest::BeginPlay()
 		ConstructionInit(ConstructionInstigator);
 }
 
-void AFGHoloTest::CheckValidFloor() {}
-
 void AFGHoloTest::ChildInit(
 	const TArray<TSubclassOf<UFGRecipe>>& ChildRecipe,
 	const TArray< FTransform > &ChildRelativeTransforms )
 {
 	for(int i = 0; i < ChildRecipe.Num(); i++)
 	{
-		ChildHolograms.Add(SpawnChildHologramFromRecipe(
+		SpawnChildHologramFromRecipe(
 			this,
 			ChildRecipe[i],
 			this,
-			ChildRelativeTransforms[i].GetLocation())
+			ChildRelativeTransforms[i].GetLocation()
 		);
-		ChildHolograms[i]->SetActorRotation(ChildRelativeTransforms[i].GetRotation());
-		ChildHolograms[i]->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+		mChildren[i]->SetActorRotation(ChildRelativeTransforms[i].GetRotation());
+		mChildren[i]->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 	}
 }
 

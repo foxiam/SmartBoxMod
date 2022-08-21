@@ -25,7 +25,6 @@ public:
 	void SaveCopy(FString CopiesName) const;
 
 protected:
-	
 	TArray<TSubclassOf< UFGRecipe >> Copies;
 	TArray<FTransform> RelativeTransforms;
 };

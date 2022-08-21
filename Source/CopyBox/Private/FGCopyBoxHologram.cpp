@@ -4,6 +4,7 @@
 #include "FGCopyBoxHologram.h"
 #include "FGPlayerController.h"
 #include "SavedCopy.h"
+#include "Buildables/FGBuildableFoundation.h"
 
 AFGCopyBoxHologram::AFGCopyBoxHologram()
 {
@@ -22,21 +23,21 @@ void AFGCopyBoxHologram::ScaleX(float Value)
 {
 	FVector Scale = GetRootComponent()->GetRelativeScale3D();
 	Scale.X += Value;
-	GetRootComponent()->SetWorldScale3D(Scale);
+	if(0 < Scale.X && Scale.X < 100) GetRootComponent()->SetWorldScale3D(Scale);
 }
 
 void AFGCopyBoxHologram::ScaleY(float Value)
 {
 	FVector Scale = GetRootComponent()->GetRelativeScale3D();
 	Scale.Y += Value;
-	GetRootComponent()->SetWorldScale3D(Scale);
+	if(0 < Scale.Y && Scale.Y < 100) GetRootComponent()->SetWorldScale3D(Scale);
 }
 
 void AFGCopyBoxHologram::ScaleZ(float Value)
 {
 	FVector Scale = GetRootComponent()->GetRelativeScale3D();
 	Scale.Z += Value;
-	GetRootComponent()->SetWorldScale3D(Scale);
+	if(0 < Scale.Z && Scale.Z < 100) GetRootComponent()->SetWorldScale3D(Scale);
 }
 
 bool AFGCopyBoxHologram::DoMultiStepPlacement(bool isInputFromARelease)
@@ -54,7 +55,8 @@ bool AFGCopyBoxHologram::DoMultiStepPlacement(bool isInputFromARelease)
 
 bool AFGCopyBoxHologram::IsValidHitResult(const FHitResult& hitResult) const
 {
-	if(!HoldMode) return Super::IsValidHitResult(hitResult);
+	const bool checkValidClass = Cast<AFGBuildableFoundation>(hitResult.GetActor());
+	if(!HoldMode) return checkValidClass && Super::IsValidHitResult(hitResult);
 	return true;
 }
 
