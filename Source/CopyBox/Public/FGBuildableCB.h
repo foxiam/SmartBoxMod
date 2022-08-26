@@ -5,7 +5,39 @@
 #include <Actor.h>
 #include "CoreMinimal.h"
 #include "Buildables/FGBuildable.h"
+#include "Buildables/FGBuildableConveyorBelt.h"
+#include "Buildables/FGBuildableFoundation.h"
 #include "FGBuildableCB.generated.h"
+
+USTRUCT()
+struct COPYBOX_API FConnectionData
+{
+	GENERATED_BODY()
+
+	FTransform Transform;
+	TArray< FSplinePointData > SplinePointData;
+	UPROPERTY()
+	UStaticMesh* StaticMesh;
+	FVector startPos;
+	FVector startNormal;
+	FVector endPos;
+	FVector endNormal;
+
+	FConnectionData() = default;
+};
+
+USTRUCT(BlueprintType)
+struct COPYBOX_API FDataOfCopiedObj
+{
+	GENERATED_BODY()
+
+	float mainHeight;
+	
+	TArray < TPair < TSubclassOf < UFGRecipe >, FTransform > > Buildables;
+	TArray < TPair < TSubclassOf < UFGRecipe >,  FConnectionData > > Conveyors;
+
+	FDataOfCopiedObj() = default;
+};
 
 /**
  * 
@@ -18,13 +50,21 @@ public:
 
 	AFGBuildableCB();
 
-	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
-	void AddBuildable(AActor* OverlappedActor);
+	virtual void BeginPlay() override;
+
+	void AddBuildable(AFGBuildable *Buildable);
 	
 	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
-	void SaveCopy(FString CopiesName) const;
+	void SaveCopy(FString CopiesName);
 
 protected:
-	TArray<TSubclassOf< UFGRecipe >> Copies;
-	TArray<FTransform> RelativeTransforms;
+
+	void AddConveyor(AFGBuildableConveyorBelt *Conveyor);
+	
+	void AddOtherBuildable(const AFGBuildable *Buildable);
+
+	FDataOfCopiedObj DataOfCopied;
+	
+	UPROPERTY()
+	AFGBuildableFoundation *MainFoundation;
 };

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Buildables/FGBuildable.h"
+#include "FGBuildableCB.h"
 #include "GameFramework/Actor.h"
 #include "SavedCopy.generated.h"
 
@@ -15,12 +15,10 @@ class COPYBOX_API ASavedCopy : public AActor
 public:
 	ASavedCopy();
 
-	void Init(const TArray<TSubclassOf< UFGRecipe >>& _Copies, const TArray<FTransform>& _RelativeTransforms, FString& _CopiesName);
+	void Init(const FDataOfCopiedObj _DataOfCopiedObj, FString& _CopiesName);
 
 	UPROPERTY(BlueprintReadOnly)
-	TArray<TSubclassOf< UFGRecipe >> Copies;
-	UPROPERTY(BlueprintReadOnly)
-	TArray<FTransform> RelativeTransforms;
+	FDataOfCopiedObj DataOfCopiedObj;
 	UPROPERTY(BlueprintReadOnly)
 	FString CopiesName;
 };

@@ -42,10 +42,6 @@ void AFGCopyBoxHologram::ScaleZ(float Value)
 
 bool AFGCopyBoxHologram::DoMultiStepPlacement(bool isInputFromARelease)
 {
-	for(auto comp : GetComponents())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *comp->GetName());
-	}
 	const bool SuperBool = Super::DoMultiStepPlacement(isInputFromARelease);
 	mBuildStep = mBuildStep == ECBHBuildStep::CBHBS_PlacementAndRotation ?
 		ECBHBuildStep::CBHBS_Hold : ECBHBuildStep::CBHBS_Build;
