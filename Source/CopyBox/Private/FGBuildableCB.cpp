@@ -67,16 +67,17 @@ void AFGBuildableCB::AddConveyor(AFGBuildableConveyorBelt* Conveyor)
 		return FTransform(Connection->GetConnectorLocation()).
 			GetRelativeTransform(MainFoundation->GetTransform()).GetLocation();
 	};
-	const float Yaw = MainFoundation->GetActorRotation().Yaw;
+	const FRotator MFRot = MainFoundation->GetActorRotation();
 	FConnectionData ConnectionData;
-	UE_LOG(LogTemp, Warning, TEXT("Rot: %f"), Yaw)
-	ConnectionData.Transform = Conveyor->GetTransform().GetRelativeTransform(MainFoundation->GetTransform());
-	ConnectionData.SplinePointData = Conveyor->GetSplineComponent()->GetSplineData(ESplineCoordinateSpace::Local);
+
 	ConnectionData.StaticMesh = Conveyor->GetSplineMesh();
+	
 	ConnectionData.startPos = GetRelativeLocation(Conveyor->GetConnection0());
-	ConnectionData.startNormal = Conveyor->GetConnection0()->GetConnectorNormal().RotateAngleAxis(-Yaw, FVector(0, 0, 1));
+	ConnectionData.startNormal = Conveyor->GetConnection0()->GetConnectorNormal().RotateAngleAxis(-MFRot.Yaw, FVector(0, 0, 1));
+	
 	ConnectionData.endPos = GetRelativeLocation(Conveyor->GetConnection1());
-	ConnectionData.endNormal = Conveyor->GetConnection1()->GetConnectorNormal().RotateAngleAxis(-Yaw, FVector(0, 0, 1));
+	ConnectionData.endNormal = Conveyor->GetConnection1()->GetConnectorNormal().RotateAngleAxis(-MFRot.Yaw, FVector(0, 0, 1));
+	
 	DataOfCopied.Conveyors.Emplace(Conveyor->GetBuiltWithRecipe(), ConnectionData);
 }
 

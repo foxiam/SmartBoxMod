@@ -15,5 +15,17 @@ class COPYBOX_API AFHitPrinter : public AFGBuildableHologram
 {
 	GENERATED_BODY()
 	
+public:
+	
+	virtual void BeginPlay() override;
+
 	virtual bool IsValidHitResult(const FHitResult& hitResult) const override;
+	
+	virtual bool DoMultiStepPlacement(bool isInputFromARelease) override;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AFGBuildable> build;
+
+	UPROPERTY()
+	AFGCharacterPlayer* ConstructorInstigator;
 };

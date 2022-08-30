@@ -13,9 +13,7 @@ USTRUCT()
 struct COPYBOX_API FConnectionData
 {
 	GENERATED_BODY()
-
-	FTransform Transform;
-	TArray< FSplinePointData > SplinePointData;
+	
 	UPROPERTY()
 	UStaticMesh* StaticMesh;
 	FVector startPos;

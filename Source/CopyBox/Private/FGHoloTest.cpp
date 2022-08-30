@@ -2,14 +2,8 @@
 
 
 #include "FGHoloTest.h"
-
-#include <xutility>
-
-#include "FakeConveyor.h"
 #include "FGPlayerController.h"
 #include "FGSplineComponent.h"
-#include "Components/SplineMeshComponent.h"
-#include "Equipment/FGBuildGunBuild.h"
 #include "Hologram/FGConveyorBeltHologram.h"
 
 AFGHoloTest::AFGHoloTest() {}
@@ -28,90 +22,114 @@ void AFGHoloTest::ChildInit(FDataOfCopiedObj _DataOfCopiedObj)
 	mHeight = DataOfCopiedObj.mainHeight;
 	for(auto child : DataOfCopiedObj.Buildables)
 	{
-		SpawnChildHolo(child.Key, child.Value);
+		OtherBuildableHolograms.Emplace(SpawnChildHolo(child.Key, child.Value));
+		if(AFGBuildableHologram *BuildableHologram = Cast<AFGBuildableHologram>(OtherBuildableHolograms.Last()))
+		{
+			BuildableHologram->mNeedsValidFloor = false;
+		}
 	}
-	for(auto conveyor : DataOfCopiedObj.Conveyors)
+	for(auto ConveyorData : DataOfCopiedObj.Conveyors)
 	{
-		FConnectionData CData= conveyor.Value;
-		AFakeConveyor *FakeConveyor = GetWorld()->SpawnActor<AFakeConveyor>
-			(CData.Transform.GetLocation(), CData.Transform.Rotator());
-		FakeConveyor->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
-		FakeConveyor->GenerateFakeConveyor(CData.StaticMesh, CData.SplinePointData);
-		FakeConveyors.Emplace(FakeConveyor);
+		FConnectionData CData = ConveyorData.Value;
+		
+		FakeConnections.Emplace(GetWorld()->SpawnActor<AFakeConnection>(FakeConnection ,CData.startPos, CData.startNormal.Rotation()));
+		
+		FakeConnections.Emplace(GetWorld()->SpawnActor<AFakeConnection>(FakeConnection, CData.endPos, CData.endNormal.Rotation()));
+		
+		AFGConveyorBeltHologram *Conveyor =
+			Cast<AFGConveyorBeltHologram>(SpawnChildHolo(ConveyorData.Key));
+		ConveyorConnectionHelper(Conveyor, ConveyorData.Value.startPos - FVector(0, 0, 100), ConveyorData.Value.startNormal);
+		ConveyorConnectionHelper(Conveyor, ConveyorData.Value.endPos - FVector(0, 0, 100), ConveyorData.Value.endNormal);
+		ConveyorsHolograms.Add(Conveyor);
 	}
+
+	for(const auto childHologram : mChildren)
+		childHologram->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 }
 
 AFGHologram* AFGHoloTest::SpawnChildHolo(TSubclassOf<UFGRecipe> Recipe, FTransform Transform, bool Rotate)
 {
-	SpawnChildHologramFromRecipe(
-		this,
-			Recipe,
-			this,
-			Transform.GetLocation());
+	SpawnChildHologramFromRecipe(this, Recipe,this, Transform.GetLocation());
 	if(Rotate) mChildren.Last()->SetActorRotation(Transform.Rotator());
-	mChildren.Last()->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 	return mChildren.Last();
 }
 
-void AFGHoloTest::ConstructChild()
+void AFGHoloTest::ConstructAll(TArray<AFGHologram*> childHolograms) const
 {
 	TArray<AActor*> Temp;
-	while(mChildren.Num() != 0)
+	while(childHolograms.Num() != 0)
 	{
-		AFGHologram *child = mChildren.Pop();
+		AFGHologram *child = childHolograms.Pop();
 		child->Construct(Temp, GetLocalPendingConstructionID());
-		child->Destroy();
 	}
 }
 
-void AFGHoloTest::ConveyorConnectionHelper(AFGConveyorBeltHologram *Conveyor, FVector Pos, FVector Normal)
+void AFGHoloTest::ConveyorConnectionHelper(AFGConveyorBeltHologram *Conveyor, FVector Pos, FVector Normal) const
 {
-	auto RotateAngleZ = [this](FVector Vec)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Rot: %f"), GetActorRotation().Yaw)
-		return Vec.RotateAngleAxis(GetActorRotation().Yaw,
-			FVector(0, 0, 1));
-	};
-	UE_LOG(LogTemp, Warning, TEXT("Pos: %s"), *(RotateAngleZ(Pos) + GetActorLocation()).ToString())
-	UE_LOG(LogTemp, Warning, TEXT("Normal: %s"), *RotateAngleZ(Normal).ToString())
 	
 	const FHitResult FakeHit = FHitResult(
 			nullptr,
 			nullptr,
-			RotateAngleZ(Pos) + GetActorLocation() - (RotateAngleZ(Normal) * 10),
-			RotateAngleZ(Normal)
+			Pos - Normal * 30,
+			Normal
 		);
 	
 	Conveyor->SetHologramLocationAndRotation(FakeHit);
 	Conveyor->DoMultiStepPlacement(true);
 }
 
-void AFGHoloTest::DestroyedFakeConveyors()
+void AFGHoloTest::DestroyedFakeConnections()
 {
-	while(FakeConveyors.Num() > 0)
+	while(FakeConnections.Num() > 0)
 	{
-		FakeConveyors.Pop()->Destroy();
+		AFakeConnection *Fake = FakeConnections.Pop();
+		Fake->Destroy();
 	}
 }
 
 void AFGHoloTest::Destroyed()
 {
 	Super::Destroyed();
-	DestroyedFakeConveyors();
+	DestroyedFakeConnections();
 }
 
 bool AFGHoloTest::DoMultiStepPlacement(bool isInputFromARelease)
 {
-	ConstructChild();
-	DestroyedFakeConveyors();
-	for(auto ConveyorData : DataOfCopiedObj.Conveyors)
+	ConstructAll(OtherBuildableHolograms);
+	DestroyedFakeConnections();
+	TArray<AActor*> Temp;
+	for(const auto ChildrenConveyorHolograms : ConveyorsHolograms)
 	{
-		AFGConveyorBeltHologram *Conveyor = Cast<AFGConveyorBeltHologram>(
-			SpawnChildHolo(ConveyorData.Key, ConveyorData.Value.Transform)
-		);
-		ConveyorConnectionHelper(Conveyor, ConveyorData.Value.startPos - FVector(0, 0, 100), ConveyorData.Value.startNormal);
-		ConveyorConnectionHelper(Conveyor, ConveyorData.Value.endPos - FVector(0, 0, 100), ConveyorData.Value.endNormal);
+		UFGFactoryConnectionComponent *OtherConnection0 =
+			UFGFactoryConnectionComponent::FindOverlappingConnections(
+				GetWorld(),
+				ChildrenConveyorHolograms->GetCachedFactoryConnectionComponents()[0]->GetConnectorLocation(),
+				150,
+				EFactoryConnectionConnector::FCC_CONVEYOR,
+				EFactoryConnectionDirection::FCD_ANY);
+		
+		UFGFactoryConnectionComponent *OtherConnection1 =
+			UFGFactoryConnectionComponent::FindOverlappingConnections(
+				GetWorld(),
+				ChildrenConveyorHolograms->GetCachedFactoryConnectionComponents()[1]->GetConnectorLocation(),
+				150,
+				EFactoryConnectionConnector::FCC_CONVEYOR,
+				EFactoryConnectionDirection::FCD_ANY);
+
+		const AFGBuildableConveyorBelt *Conveyor =
+			Cast<AFGBuildableConveyorBelt>(ChildrenConveyorHolograms->Construct(Temp, GetLocalPendingConstructionID()));
+		
+		if(OtherConnection0 && Conveyor->GetConnection0()->CanConnectTo(OtherConnection0))
+		{
+			Conveyor->GetConnection0()->ClearConnection();
+			Conveyor->GetConnection0()->SetConnection(OtherConnection0);
+		}
+		
+		if(OtherConnection1 && Conveyor->GetConnection1()->CanConnectTo(OtherConnection1))
+		{
+			Conveyor->GetConnection1()->ClearConnection();
+			Conveyor->GetConnection1()->SetConnection(OtherConnection1);
+		}
 	}
-	ConstructChild();
 	return true;
 }
