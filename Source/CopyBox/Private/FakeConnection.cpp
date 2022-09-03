@@ -5,7 +5,6 @@
 
 #include "FGFactoryConnectionComponent.h"
 #include "Equipment/FGAmmoTypeInstantHit.h"
-#include "Framework/MultiBox/ToolMenuBase.h"
 
 
 // Sets default values

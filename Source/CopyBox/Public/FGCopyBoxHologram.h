@@ -9,9 +9,10 @@
 UENUM()
 enum class ECBHBuildStep : uint8
 {
-	CBHBS_PlacementAndRotation,
-	CBHBS_Hold,
-	CBHBS_Build
+	PlacementAndRotation,
+	ScalingXY,
+	SczlingZ,
+	Build
 };
 
 UCLASS()
@@ -27,12 +28,6 @@ protected:
 	virtual void BeginPlay() override;
 	
 public:
-
-	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
-	void ScaleX(float Value);
-	
-	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
-	void ScaleY(float Value);
 	
 	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
 	void ScaleZ(float Value);
@@ -45,8 +40,9 @@ public:
 	
 protected:
 	
-	bool HoldMode = false;
 	ECBHBuildStep mBuildStep;
+
+	float deltaRotate;
 
 	UPROPERTY()
 	const AFGCharacterPlayer* ConstructionInstigator;

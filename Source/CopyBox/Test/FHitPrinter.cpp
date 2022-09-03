@@ -21,14 +21,30 @@ bool AFHitPrinter::IsValidHitResult(const FHitResult& hitResult) const
 bool AFHitPrinter::DoMultiStepPlacement(bool isInputFromARelease)
 {
 	FHitResult hit = ConstructorInstigator->GetBuildGun()->GetHitResult();
+	if(hit.Actor.Get())
+		UE_LOG(LogTemp, Error, TEXT("Name: %s"), *hit.Actor.Get()->GetName())
 	UE_LOG(LogTemp, Error, TEXT("Location: %s"), *hit.Location.ToString())
 	UE_LOG(LogTemp, Error, TEXT("Normal: %s"), *hit.Normal.ToString())
-	UFGFactoryConnectionComponent *con = UFGFactoryConnectionComponent::FindOverlappingConnections(
-		GetWorld(),
-		hit.Location,
-		200,
-		EFactoryConnectionConnector::FCC_CONVEYOR,
-		EFactoryConnectionDirection::FCD_ANY);
-	UE_LOG(LogTemp, Warning, TEXT("Con find: %s"), con ? TEXT("true") : TEXT("false"));
+	if(step == 0)
+	{
+		copy.Emplace(hit.Actor.Get());
+		t = copy[0]->GetTransform();
+		step++;
+	}
+	else if(step < 3)
+	{
+		copy.Emplace(hit.Actor.Get());
+		step++;
+	}
+	else if(step == 3)
+	{
+		for(auto u : copy)
+		{
+			FActorSpawnParameters a;
+			a.Template = u;
+			const FTransform v = u->GetTransform().GetRelativeTransform(t);
+			AActor* c = GetWorld()->SpawnActor(u->StaticClass(), &v, a);
+		}
+	}
 	return false;
 }

@@ -2,43 +2,52 @@
 
 #include "FGBuildableCB.h"
 
-#include "AkAcousticPortal.h"
 #include "FGBuildableCopy.h"
-#include "FGFactoryConnectionComponent.h"
 #include "SavedCopy.h"
-#include "../../../../../../Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/include/filesystem"
-#include "Buildables/FGBuildableConveyorBase.h"
 #include "Buildables/FGBuildableConveyorBelt.h"
 #include "Buildables/FGBuildableFoundation.h"
+#include "Hologram/FGWireHologram.h"
 #include "Hologram/HologramHelpers.h"
-#include "Kismet/KismetMathLibrary.h"
 
 
-AFGBuildableCB::AFGBuildableCB() : Super() {}
+AFGBuildableCB::AFGBuildableCB() : Super()
+{
+}
 
 void AFGBuildableCB::BeginPlay()
 {
-	Super::BeginPlay();
-	FHitResult resultHit;
-	const FVector TraceStart = GetActorLocation() + GetActorForwardVector() * 10.0f;
-	const FVector TraceEnd = GetActorLocation() - GetActorUpVector() * 100.0f;
+	TArray<FHitResult> HitResults;
+	const FVector TraceStart = GetActorLocation() + GetActorForwardVector() * 10.0f + GetActorRightVector() * 10.0f;
+	const FVector TraceEnd = TraceStart - GetActorUpVector() * 50.0f;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 	
-	GetWorld()->LineTraceSingleByChannel(resultHit, TraceStart, TraceEnd, ECC_WorldStatic, QueryParams);
+	GetWorld()->LineTraceMultiByChannel(HitResults, TraceStart, TraceEnd, ECC_WorldStatic, QueryParams);
 
-	if(resultHit.bBlockingHit && IsValid(resultHit.GetActor()))
+	UE_LOG(LogTemp, Warning, TEXT("NumHit: %d"), HitResults.Num())
+	
+	for(auto resultHit : HitResults)
 	{
-		MainFoundation = Cast<AFGBuildableFoundation>(resultHit.GetActor());
-		if(MainFoundation) DataOfCopied.mainHeight = MainFoundation->mHeight;
+		if(auto foundation =  Cast<AFGBuildableFoundation>(resultHit.GetActor()))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("foundation found"))
+			MainFoundation = foundation;
+			break;
+		}
 	}
+	
+	Super::BeginPlay();
 }
 
 void AFGBuildableCB::AddBuildable(AFGBuildable* Buildable)
 {
-	if(AFGBuildableConveyorBelt *ConveyorBase = Cast<AFGBuildableConveyorBelt>(Buildable))
+	if(const auto *Conveyor = Cast<AFGBuildableConveyorBelt>(Buildable))
 	{
-		AddConveyor(ConveyorBase);
+		AddConveyor(Conveyor);
+	}
+	else if(const auto *Wire = Cast<AFGWireHologram>(Buildable))
+	{
+		
 	}
 	else
 	{
@@ -57,37 +66,34 @@ void AFGBuildableCB::SaveCopy(FString CopiesName)
 	}
 
 	ASavedCopy *newSavedCopy = GetWorld()->SpawnActor<ASavedCopy>(ASavedCopy::StaticClass());
-	newSavedCopy->Init(DataOfCopied, CopiesName);
+	newSavedCopy->Init(DataOfCopied, CopiesName, MainFoundation->mHeight);
 }
 
-void AFGBuildableCB::AddConveyor(AFGBuildableConveyorBelt* Conveyor)
+void AFGBuildableCB::AddConveyor(const AFGBuildableConveyorBelt* Conveyor)
 {
-	auto GetRelativeLocation = [this](const UFGFactoryConnectionComponent* Connection)
-	{
-		return FTransform(Connection->GetConnectorLocation()).
-			GetRelativeTransform(MainFoundation->GetTransform()).GetLocation();
-	};
-	const FRotator MFRot = MainFoundation->GetActorRotation();
-	FConnectionData ConnectionData;
+	FSplineData SplineData;
+	SplineData.Transform = Conveyor->GetTransform().GetRelativeTransform(MainFoundation->GetTransform());
+	SplineData.SplinePointsData = Conveyor->GetSplineData();
+	DataOfCopied.SplineBuildable.Emplace(Conveyor->GetBuiltWithRecipe(), SplineData);
+}
 
-	ConnectionData.StaticMesh = Conveyor->GetSplineMesh();
-	
-	ConnectionData.startPos = GetRelativeLocation(Conveyor->GetConnection0());
-	ConnectionData.startNormal = Conveyor->GetConnection0()->GetConnectorNormal().RotateAngleAxis(-MFRot.Yaw, FVector(0, 0, 1));
-	
-	ConnectionData.endPos = GetRelativeLocation(Conveyor->GetConnection1());
-	ConnectionData.endNormal = Conveyor->GetConnection1()->GetConnectorNormal().RotateAngleAxis(-MFRot.Yaw, FVector(0, 0, 1));
-	
-	DataOfCopied.Conveyors.Emplace(Conveyor->GetBuiltWithRecipe(), ConnectionData);
+void AFGBuildableCB::AddWire(const AFGBuildableWire* Wire)
+{
+	FConnectionWireData WireData;
+	WireData.ConnectionLocation0 =FTransform(
+		Wire->GetLocation(0)).GetRelativeTransform(MainFoundation->GetTransform()).GetLocation();
+	WireData.ConnectionLocation1 = FTransform(
+		Wire->GetLocation(1)).GetRelativeTransform(MainFoundation->GetTransform()).GetLocation();
+	DataOfCopied.Wire.Emplace(Wire->GetBuiltWithRecipe(), WireData);
 }
 
 void AFGBuildableCB::AddOtherBuildable(const AFGBuildable* Buildable)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Name: %s"), *Buildable->GetName())
-	UE_LOG(LogTemp, Warning, TEXT("	Location target: %s"),
-		*Buildable->GetTransform().GetRelativeTransform(MainFoundation->GetTransform()).GetLocation().ToString())
-	TPair<TSubclassOf<UFGRecipe>, FTransform> BuildalesData(
+	if(Buildable)
+	{
+		DataOfCopied.OtherBuildable.Emplace(
 			Buildable->GetBuiltWithRecipe(),
-			Buildable->GetTransform().GetRelativeTransform(MainFoundation->GetTransform()));
-	DataOfCopied.Buildables.Emplace(BuildalesData);
+			Buildable->GetTransform().GetRelativeTransform(MainFoundation->GetTransform())
+			);
+	}
 }

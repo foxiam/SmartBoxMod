@@ -4,7 +4,9 @@
 #include "FGHoloTest.h"
 #include "FGPlayerController.h"
 #include "FGSplineComponent.h"
+#include "FGSplineMeshGenerationLibrary.h"
 #include "Hologram/FGConveyorBeltHologram.h"
+#include "Hologram/FGWireHologram.h"
 
 AFGHoloTest::AFGHoloTest() {}
 
@@ -16,120 +18,112 @@ void AFGHoloTest::BeginPlay()
 		ConstructionInit(ConstructionInstigator);
 }
 
-void AFGHoloTest::ChildInit(FDataOfCopiedObj _DataOfCopiedObj)
+void AFGHoloTest::ChildInit(const FDataOfCopiedBuildable DataOfCopied, float _mHeight)
 {
-	DataOfCopiedObj = _DataOfCopiedObj;
-	mHeight = DataOfCopiedObj.mainHeight;
-	for(auto child : DataOfCopiedObj.Buildables)
+	SetIsChanged(true);
+	mHeight = _mHeight;
+	for(const auto BuildableData : DataOfCopied.OtherBuildable)
+		OtherBuildableHolograms.Emplace(SpawnChildHolo(BuildableData.Key, BuildableData.Value));
+	
+	for(const auto SplineData : DataOfCopied.SplineBuildable)
 	{
-		OtherBuildableHolograms.Emplace(SpawnChildHolo(child.Key, child.Value));
-		if(AFGBuildableHologram *BuildableHologram = Cast<AFGBuildableHologram>(OtherBuildableHolograms.Last()))
-		{
-			BuildableHologram->mNeedsValidFloor = false;
-		}
-	}
-	for(auto ConveyorData : DataOfCopiedObj.Conveyors)
-	{
-		FConnectionData CData = ConveyorData.Value;
+		auto ConveyorHolo = Cast<AFGConveyorBeltHologram>(SpawnChildHolo(SplineData.Key, SplineData.Value.Transform));
+		ConveyorHolo->mSplineComponent->SetSplineData(SplineData.Value.SplinePointsData, ESplineCoordinateSpace::Local);
 		
-		FakeConnections.Emplace(GetWorld()->SpawnActor<AFakeConnection>(FakeConnection ,CData.startPos, CData.startNormal.Rotation()));
+		UFGSplineMeshGenerationLibrary::BuildSplineMeshes(
+			ConveyorHolo->mSplineComponent,
+			ConveyorHolo->mMaxSplineLength,
+			ConveyorHolo->mMesh,
+			ConveyorHolo->mMeshLength,
+			ConveyorHolo->mSplineMeshes,
+			[ConveyorHolo]( USplineComponent* spline)
+			{
+				USplineMeshComponent* newComponent =
+					NewObject< USplineMeshComponent >(
+						spline->GetOwner(), USplineMeshComponent::StaticClass(), NAME_None,
+						RF_NoFlags, ConveyorHolo->mSplineMeshes[0]);
+				newComponent->SetupAttachment( ConveyorHolo->GetRootComponent() );
+				newComponent->Mobility = EComponentMobility::Movable;
+				return newComponent;
+			}
+		);
 		
-		FakeConnections.Emplace(GetWorld()->SpawnActor<AFakeConnection>(FakeConnection, CData.endPos, CData.endNormal.Rotation()));
-		
-		AFGConveyorBeltHologram *Conveyor =
-			Cast<AFGConveyorBeltHologram>(SpawnChildHolo(ConveyorData.Key));
-		ConveyorConnectionHelper(Conveyor, ConveyorData.Value.startPos - FVector(0, 0, 100), ConveyorData.Value.startNormal);
-		ConveyorConnectionHelper(Conveyor, ConveyorData.Value.endPos - FVector(0, 0, 100), ConveyorData.Value.endNormal);
-		ConveyorsHolograms.Add(Conveyor);
+		ConveyorsHolograms.Emplace(ConveyorHolo);
 	}
 
-	for(const auto childHologram : mChildren)
-		childHologram->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
+	for(auto WireData : DataOfCopied.Wire)
+	{
+		FWireHologramData WireHologramData;
+		WireHologramData.WireHologram =
+			Cast<AFGWireHologram>(SpawnChildHolo(WireData.Key, FTransform(WireData.Value.ConnectionLocation0)));
+		WireHologramData.Connection = WireData.Value;
+		WireHolograms.Emplace();
+	}
 }
 
 AFGHologram* AFGHoloTest::SpawnChildHolo(TSubclassOf<UFGRecipe> Recipe, FTransform Transform, bool Rotate)
 {
 	SpawnChildHologramFromRecipe(this, Recipe,this, Transform.GetLocation());
 	if(Rotate) mChildren.Last()->SetActorRotation(Transform.Rotator());
+	mChildren.Last()->AttachToActor(this, FAttachmentTransformRules::KeepRelativeTransform);
 	return mChildren.Last();
 }
 
-void AFGHoloTest::ConstructAll(TArray<AFGHologram*> childHolograms) const
+void AFGHoloTest::ConstructOtherBuildable() const
 {
 	TArray<AActor*> Temp;
-	while(childHolograms.Num() != 0)
+	for(const auto buildable : OtherBuildableHolograms)
+		buildable->Construct(Temp, GetLocalPendingConstructionID());
+}
+
+void AFGHoloTest::ConstructConveyorBelt() const
+{
+	TArray<AActor*> Temp;
+
+	auto FindConnect = [this](const FVector ConnectionPos)
 	{
-		AFGHologram *child = childHolograms.Pop();
-		child->Construct(Temp, GetLocalPendingConstructionID());
+		return UFGFactoryConnectionComponent::FindOverlappingConnections(
+				GetWorld(),
+				ConnectionPos,
+				200,
+				EFactoryConnectionConnector::FCC_CONVEYOR,
+				EFactoryConnectionDirection::FCD_ANY);
+	};
+	
+	for(const auto ConveyorHologram : ConveyorsHolograms)
+	{
+		const int PointsNum = ConveyorHologram->mSplineComponent->GetNumberOfSplinePoints();
+		const FVector ConnectionLocation0 =
+			ConveyorHologram->mSplineComponent->GetSplinePointData(0, ESplineCoordinateSpace::World).Location;
+		const FVector ConnectionLocation1 =
+			ConveyorHologram->mSplineComponent->GetSplinePointData(PointsNum - 1, ESplineCoordinateSpace::World).Location;
+		
+		UFGFactoryConnectionComponent *OtherConnection0 = FindConnect(ConnectionLocation0);
+		UFGFactoryConnectionComponent *OtherConnection1 = FindConnect(ConnectionLocation1);
+		
+		const AFGBuildableConveyorBelt *Conveyor =
+			Cast<AFGBuildableConveyorBelt>(ConveyorHologram->Construct(Temp, GetLocalPendingConstructionID()));
+		
+		if(OtherConnection0 && Conveyor->GetConnection0()->CanConnectTo(OtherConnection0))
+			Conveyor->GetConnection0()->SetConnection(OtherConnection0);
+		
+		if(OtherConnection1 && Conveyor->GetConnection1()->CanConnectTo(OtherConnection1))
+			Conveyor->GetConnection1()->SetConnection(OtherConnection1);
 	}
 }
 
-void AFGHoloTest::ConveyorConnectionHelper(AFGConveyorBeltHologram *Conveyor, FVector Pos, FVector Normal) const
+void AFGHoloTest::ConstructWire() const
 {
-	
-	const FHitResult FakeHit = FHitResult(
-			nullptr,
-			nullptr,
-			Pos - Normal * 30,
-			Normal
-		);
-	
-	Conveyor->SetHologramLocationAndRotation(FakeHit);
-	Conveyor->DoMultiStepPlacement(true);
-}
-
-void AFGHoloTest::DestroyedFakeConnections()
-{
-	while(FakeConnections.Num() > 0)
+	for(auto WireHolo : WireHolograms)
 	{
-		AFakeConnection *Fake = FakeConnections.Pop();
-		Fake->Destroy();
-	}
-}
 
-void AFGHoloTest::Destroyed()
-{
-	Super::Destroyed();
-	DestroyedFakeConnections();
+	}
 }
 
 bool AFGHoloTest::DoMultiStepPlacement(bool isInputFromARelease)
 {
-	ConstructAll(OtherBuildableHolograms);
-	DestroyedFakeConnections();
-	TArray<AActor*> Temp;
-	for(const auto ChildrenConveyorHolograms : ConveyorsHolograms)
-	{
-		UFGFactoryConnectionComponent *OtherConnection0 =
-			UFGFactoryConnectionComponent::FindOverlappingConnections(
-				GetWorld(),
-				ChildrenConveyorHolograms->GetCachedFactoryConnectionComponents()[0]->GetConnectorLocation(),
-				150,
-				EFactoryConnectionConnector::FCC_CONVEYOR,
-				EFactoryConnectionDirection::FCD_ANY);
-		
-		UFGFactoryConnectionComponent *OtherConnection1 =
-			UFGFactoryConnectionComponent::FindOverlappingConnections(
-				GetWorld(),
-				ChildrenConveyorHolograms->GetCachedFactoryConnectionComponents()[1]->GetConnectorLocation(),
-				150,
-				EFactoryConnectionConnector::FCC_CONVEYOR,
-				EFactoryConnectionDirection::FCD_ANY);
-
-		const AFGBuildableConveyorBelt *Conveyor =
-			Cast<AFGBuildableConveyorBelt>(ChildrenConveyorHolograms->Construct(Temp, GetLocalPendingConstructionID()));
-		
-		if(OtherConnection0 && Conveyor->GetConnection0()->CanConnectTo(OtherConnection0))
-		{
-			Conveyor->GetConnection0()->ClearConnection();
-			Conveyor->GetConnection0()->SetConnection(OtherConnection0);
-		}
-		
-		if(OtherConnection1 && Conveyor->GetConnection1()->CanConnectTo(OtherConnection1))
-		{
-			Conveyor->GetConnection1()->ClearConnection();
-			Conveyor->GetConnection1()->SetConnection(OtherConnection1);
-		}
-	}
-	return true;
+	ConstructOtherBuildable();
+	ConstructConveyorBelt();
+	ConstructWire();
+	return false;
 }

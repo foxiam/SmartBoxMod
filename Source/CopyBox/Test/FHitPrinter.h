@@ -28,4 +28,11 @@ public:
 
 	UPROPERTY()
 	AFGCharacterPlayer* ConstructorInstigator;
+
+	int step = 0;
+
+	UPROPERTY();
+	TArray<AActor*> copy;
+
+	FTransform t;
 };

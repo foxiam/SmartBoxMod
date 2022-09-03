@@ -2,13 +2,22 @@
 
 #pragma once
 
-#include <utility>
-
 #include "CoreMinimal.h"
-#include "FakeConnection.h"
 #include "FGBuildableCB.h"
 #include "Hologram/FGFoundationHologram.h"
 #include "FGHoloTest.generated.h"
+
+USTRUCT()
+struct COPYBOX_API FWireHologramData
+{
+	GENERATED_BODY()
+	
+	UPROPERTY()
+	AFGWireHologram* WireHologram;
+	FConnectionWireData Connection;
+	
+	FWireHologramData() = default;
+};
 
 /**
  * 
@@ -23,38 +32,30 @@ public:
 	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
-	void ChildInit(FDataOfCopiedObj _DataOfCopiedObj);
+	void ChildInit(const FDataOfCopiedBuildable DataOfCopied, float _mHeight);
 	
 	UFUNCTION(BlueprintImplementableEvent)
 	void ConstructionInit(AFGCharacterPlayer *ConstructionInitInstigator);
 
 	virtual bool DoMultiStepPlacement(bool isInputFromARelease) override;
 
-	AFGHologram* SpawnChildHolo(TSubclassOf<UFGRecipe> Recipe, FTransform Transform = FTransform(), bool Rotate = true);
+	AFGHologram* SpawnChildHolo(TSubclassOf<UFGRecipe> Recipe, FTransform Transform, bool Rotate = true);
 
-	void ConstructAll(TArray<AFGHologram*> childHolograms) const;
+	void ConstructOtherBuildable() const;
 
-	void ConveyorConnectionHelper(AFGConveyorBeltHologram *Conveyor, FVector Pos, FVector Normal) const;
+	void ConstructConveyorBelt() const;
+
+	void ConstructWire() const;
 
 	UPROPERTY()
 	AFGCharacterPlayer *ConstructionInstigator;
-
-	FDataOfCopiedObj DataOfCopiedObj;
 	
 protected:
-	
-	void DestroyedFakeConnections();
-
-	virtual void Destroyed() override;
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AFakeConnection> FakeConnection;
-	
-	UPROPERTY()
-	TArray<AFakeConnection*> FakeConnections;
-
 	UPROPERTY()
 	TArray<AFGConveyorBeltHologram*> ConveyorsHolograms;
+
+	UPROPERTY()
+	TArray<FWireHologramData> WireHolograms;
 
 	UPROPERTY()
 	TArray<AFGHologram*> OtherBuildableHolograms;

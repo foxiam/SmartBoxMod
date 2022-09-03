@@ -15,10 +15,15 @@ class COPYBOX_API ASavedCopy : public AActor
 public:
 	ASavedCopy();
 
-	void Init(const FDataOfCopiedObj _DataOfCopiedObj, FString& _CopiesName);
+	void Init(const FDataOfCopiedBuildable _DataOfCopied, FString& _CopiesName, float _mHeight);
 
+	
 	UPROPERTY(BlueprintReadOnly)
-	FDataOfCopiedObj DataOfCopiedObj;
+	FDataOfCopiedBuildable DataOfCopied;
+	
 	UPROPERTY(BlueprintReadOnly)
 	FString CopiesName;
+	
+	UPROPERTY(BlueprintReadOnly)
+	float mHeight;
 };

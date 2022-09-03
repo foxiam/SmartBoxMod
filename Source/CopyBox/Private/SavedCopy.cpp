@@ -3,12 +3,12 @@
 
 #include "SavedCopy.h"
 
-
 // Sets default values
 ASavedCopy::ASavedCopy() {}
 
-void ASavedCopy::Init(FDataOfCopiedObj _DataOfCopiedObj, FString& _CopiesName)
+void ASavedCopy::Init(const FDataOfCopiedBuildable _DataOfCopied, FString& _CopiesName, float _mHeight)
 {
-	DataOfCopiedObj = _DataOfCopiedObj;
+	DataOfCopied = _DataOfCopied;
 	CopiesName = _CopiesName;
+	mHeight = _mHeight;
 }

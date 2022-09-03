@@ -7,34 +7,37 @@
 #include "Buildables/FGBuildable.h"
 #include "Buildables/FGBuildableConveyorBelt.h"
 #include "Buildables/FGBuildableFoundation.h"
+#include "Buildables/FGBuildableWire.h"
 #include "FGBuildableCB.generated.h"
 
 USTRUCT()
-struct COPYBOX_API FConnectionData
+struct COPYBOX_API FSplineData
 {
 	GENERATED_BODY()
-	
-	UPROPERTY()
-	UStaticMesh* StaticMesh;
-	FVector startPos;
-	FVector startNormal;
-	FVector endPos;
-	FVector endNormal;
+	FTransform Transform;
+	TArray<FSplinePointData> SplinePointsData;
 
-	FConnectionData() = default;
+	FSplineData() = default;
+};
+
+USTRUCT()
+struct COPYBOX_API FConnectionWireData
+{
+	GENERATED_BODY()
+	FVector ConnectionLocation0;
+	FVector ConnectionLocation1;
+
+	FConnectionWireData() = default;
 };
 
 USTRUCT(BlueprintType)
-struct COPYBOX_API FDataOfCopiedObj
+struct COPYBOX_API FDataOfCopiedBuildable
 {
 	GENERATED_BODY()
-
-	float mainHeight;
-	
-	TArray < TPair < TSubclassOf < UFGRecipe >, FTransform > > Buildables;
-	TArray < TPair < TSubclassOf < UFGRecipe >,  FConnectionData > > Conveyors;
-
-	FDataOfCopiedObj() = default;
+	TArray<TPair<TSubclassOf<UFGRecipe>, FTransform>> OtherBuildable;
+	TArray<TPair<TSubclassOf<UFGRecipe>, FSplineData>> SplineBuildable;
+	TArray<TPair<TSubclassOf<UFGRecipe>, FConnectionWireData>> Wire;
+	FDataOfCopiedBuildable() = default;
 };
 
 /**
@@ -44,25 +47,28 @@ UCLASS( Abstract )
 class COPYBOX_API AFGBuildableCB : public AFGBuildable
 {
 	GENERATED_BODY()
+	
 public:
 
 	AFGBuildableCB();
 
 	virtual void BeginPlay() override;
-
+	
 	void AddBuildable(AFGBuildable *Buildable);
 	
 	UFUNCTION(BlueprintCallable, Category="UFUNCTION")
 	void SaveCopy(FString CopiesName);
 
+	UPROPERTY()
+	AFGBuildableFoundation *MainFoundation;
+
 protected:
 
-	void AddConveyor(AFGBuildableConveyorBelt *Conveyor);
+	void AddConveyor(const AFGBuildableConveyorBelt *Conveyor);
+
+	void AddWire(const AFGBuildableWire *Wire);
 	
 	void AddOtherBuildable(const AFGBuildable *Buildable);
 
-	FDataOfCopiedObj DataOfCopied;
-	
-	UPROPERTY()
-	AFGBuildableFoundation *MainFoundation;
+	FDataOfCopiedBuildable DataOfCopied;
 };

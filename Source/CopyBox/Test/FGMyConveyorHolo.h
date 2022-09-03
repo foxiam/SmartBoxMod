@@ -2,11 +2,12 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "UObject/Object.h"
-#include "Hologram/FGConveyorBeltHologram.h"
-#include "FGMyConveyorHolo.generated.h"
+#include <basetyps.h>
 
+#include "CoreMinimal.h"
+#include "Hologram/FGConveyorBeltHologram.h"
+#include "Patching/NativeHookManager.h"
+#include "FGMyConveyorHolo.generated.h"
 /**
  * 
  */
@@ -22,7 +23,4 @@ public:
 	virtual void SetHologramLocationAndRotation(const FHitResult& hitResult) override;
 
 	virtual bool DoMultiStepPlacement(bool isInputFromARelease) override;
-
-	virtual bool IsConnectionSnapped(bool lastConnection) override;
-	
 };
