@@ -8,15 +8,15 @@
 #include "FGHoloTest.generated.h"
 
 USTRUCT()
-struct COPYBOX_API FWireHologramData
+struct COPYBOX_API FWireData
 {
 	GENERATED_BODY()
 	
 	UPROPERTY()
-	AFGWireHologram* WireHologram;
+	AFGWireHologram* Hologram;
 	FConnectionWireData Connection;
 	
-	FWireHologramData() = default;
+	FWireData() = default;
 };
 
 /**
@@ -55,7 +55,7 @@ protected:
 	TArray<AFGConveyorBeltHologram*> ConveyorsHolograms;
 
 	UPROPERTY()
-	TArray<FWireHologramData> WireHolograms;
+	TArray<FWireData> WireHolograms;
 
 	UPROPERTY()
 	TArray<AFGHologram*> OtherBuildableHolograms;

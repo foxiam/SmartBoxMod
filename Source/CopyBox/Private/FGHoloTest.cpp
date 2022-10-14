@@ -53,8 +53,8 @@ void AFGHoloTest::ChildInit(const FDataOfCopiedBuildable DataOfCopied, float _mH
 
 	for(auto WireData : DataOfCopied.Wire)
 	{
-		FWireHologramData WireHologramData;
-		WireHologramData.WireHologram =
+		FWireData WireHologramData;
+		WireHologramData.Hologram =
 			Cast<AFGWireHologram>(SpawnChildHolo(WireData.Key, FTransform(WireData.Value.ConnectionLocation0)));
 		WireHologramData.Connection = WireData.Value;
 		WireHolograms.Emplace();
@@ -114,9 +114,25 @@ void AFGHoloTest::ConstructConveyorBelt() const
 
 void AFGHoloTest::ConstructWire() const
 {
-	for(auto WireHolo : WireHolograms)
+	auto GenerateFakeHit = [this](FVector Pos)
 	{
+		return FHitResult(
+			nullptr,
+			nullptr,
+			Pos.RotateAngleAxis(GetActorRotation().Yaw, FVector(0, 0, 1)) + GetActorLocation(),
+			FVector::ZeroVector
+			);
+	};
 
+	TArray<AActor*> Temp;
+	
+	for(const auto WireData : WireHolograms)
+	{
+		WireData.Hologram->SetHologramLocationAndRotation(GenerateFakeHit(WireData.Connection.ConnectionLocation0));
+		WireData.Hologram->DoMultiStepPlacement(true);
+		WireData.Hologram->SetHologramLocationAndRotation(GenerateFakeHit(WireData.Connection.ConnectionLocation1));
+		WireData.Hologram->DoMultiStepPlacement(true);
+		WireData.Hologram->Construct(Temp, GetLocalPendingConstructionID());
 	}
 }
 

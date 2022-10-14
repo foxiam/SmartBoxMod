@@ -23,16 +23,6 @@ public:
 	
 	virtual bool DoMultiStepPlacement(bool isInputFromARelease) override;
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<AFGBuildable> build;
-
 	UPROPERTY()
 	AFGCharacterPlayer* ConstructorInstigator;
-
-	int step = 0;
-
-	UPROPERTY();
-	TArray<AActor*> copy;
-
-	FTransform t;
 };

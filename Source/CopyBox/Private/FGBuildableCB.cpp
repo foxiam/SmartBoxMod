@@ -35,7 +35,10 @@ void AFGBuildableCB::BeginPlay()
 			break;
 		}
 	}
-	
+	if(MainFoundation)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("foundation not found"))
+	}
 	Super::BeginPlay();
 }
 
